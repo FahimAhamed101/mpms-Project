@@ -42,7 +42,7 @@ export interface IUser {
 }
 
 export interface IProject {
-  _id: string;
+   _id?: mongoose.Types.ObjectId | string; 
   title: string;
   client: string;
   description: string;

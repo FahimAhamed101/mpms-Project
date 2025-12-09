@@ -5,7 +5,11 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 
 import authRoutes from './routes/auth.routes';
-;
+import projectRoutes from './routes/project.routes';
+import sprintRoutes from './routes/sprint.routes';
+import taskRoutes from './routes/task.routes';
+import teamRoutes from './routes/team.routes';
+import reportRoutes from './routes/report.routes';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config();
@@ -23,8 +27,13 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 
-app.use('/api/auth', authRoutes);
 
+app.use('/api/auth', authRoutes);
+app.use('/api/projects', projectRoutes);
+app.use('/api/sprints', sprintRoutes);
+app.use('/api/tasks', taskRoutes);
+app.use('/api/team', teamRoutes);
+app.use('/api/reports', reportRoutes);
 
 
 app.get('/health', (req, res) => {
