@@ -1,16 +1,16 @@
 // app/lib/api/taskApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 import { RootState } from '../store';
-import { Task, TaskStatus } from '@/app/types';
+import { Task, TaskPriority, TaskStatus } from '@/app/types';
 
 interface GetTasksParams {
   project?: string;
   sprint?: string;
   assignee?: string;
-  status?: TaskStatus;
+  status?: TaskStatus; // This should be TaskStatus (not string)
+  priority?: TaskPriority; // This should be TaskPriority (not string)
   search?: string;
 }
-
 interface UpdateTaskData {
   id: string;
   status?: TaskStatus;

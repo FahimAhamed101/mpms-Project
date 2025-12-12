@@ -54,7 +54,7 @@ export default function TeamPage() {
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
 
   // Fetch team members
-  const { data: teamData, isLoading, refetch } = useGetTeamMembersQuery();
+  const { data: teamData, isLoading, refetch } = useGetTeamMembersQuery({});
   const { data: projectsData } = useGetProjectsQuery();
   const [updateTeamMember] = useUpdateTeamMemberMutation();
   const [deleteTeamMember] = useDeleteTeamMemberMutation();
@@ -130,31 +130,33 @@ export default function TeamPage() {
 
   const stats = calculateStats();
 
-  // Handle member status toggle
-  const handleToggleStatus = async (member: any) => {
-    try {
-      await updateTeamMember({
-        id: member._id,
-        isActive: !member.isActive,
-      }).unwrap();
-      refetch();
-    } catch (error) {
-      console.error('Failed to update member status:', error);
-    }
-  };
+// In your TeamPage component, update these functions:
 
-  // Handle role change
-  const handleRoleChange = async (memberId: string, newRole: UserRole) => {
-    try {
-      await updateTeamMember({
-        id: memberId,
-        role: newRole,
-      }).unwrap();
-      refetch();
-    } catch (error) {
-      console.error('Failed to update member role:', error);
-    }
-  };
+// Handle member status toggle
+const handleToggleStatus = async (member: any) => {
+  try {
+    await updateTeamMember({
+      id: member._id,
+      data: { isActive: !member.isActive }, // Wrap in 'data' property
+    }).unwrap();
+    refetch();
+  } catch (error) {
+    console.error('Failed to update member status:', error);
+  }
+};
+
+// Handle role change
+const handleRoleChange = async (memberId: string, newRole: UserRole) => {
+  try {
+    await updateTeamMember({
+      id: memberId,
+      data: { role: newRole }, // Wrap in 'data' property
+    }).unwrap();
+    refetch();
+  } catch (error) {
+    console.error('Failed to update member role:', error);
+  }
+};
 
   // Handle member deletion
   const handleDeleteMember = async () => {

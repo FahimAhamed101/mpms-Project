@@ -82,19 +82,20 @@ export interface ValidationError {
   path: string;
   msg: string;
 }
-
 export interface Task {
   _id: string;
   title: string;
   description: string;
   status: TaskStatus;
-  priority: Priority;
-  assignees: User[];
+  priority: TaskPriority; // Change from Priority to TaskPriority
+  assignees: (User | string)[];
   dueDate: string;
-  sprint?: string;
-  project: string;
+  sprint?: Sprint | string;
+  project: Project | string;
   estimatedHours?: number;
   actualHours?: number;
+  tags?: string[];
+  attachments?: string[];
   createdAt: string;
   updatedAt: string;
 }
@@ -159,3 +160,21 @@ export interface Project {
   createdAt?: string;
   updatedAt?: string;
 }
+
+// Add to your types
+export interface TaskResponse {
+  success: boolean;
+  data: {
+    task: Task;
+  };
+  message?: string;
+}
+
+// Or if it's a generic API response wrapper
+export interface ApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+  errors?: ValidationError[];
+}
+

@@ -58,7 +58,7 @@ export default function EditTaskPage() {
   // Fetch projects, sprints, and users
   const { data: projectsData } = useGetProjectsQuery();
   const { data: sprintsData } = useGetSprintsQuery({});
-  const { data: usersData } = useGetUsersQuery();
+  const { data: usersData } = useGetUsersQuery({});
   
   const [updateTask] = useUpdateTaskMutation();
 
@@ -74,29 +74,45 @@ export default function EditTaskPage() {
     : sprints;
 
   // Initialize form with task data
-  useEffect(() => {
-    if (taskData?.data?.task) {
-      const task = taskData.data.task;
-      console.log('Task data:', task);
-      
-      // Format date to YYYY-MM-DD for input field
-      const dueDate = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '';
-      
-      setFormData({
-        title: task.title || '',
-        description: task.description || '',
-        project: task.project?._id || task.project || '',
-        sprint: task.sprint?._id || task.sprint || '',
-        assignees: task.assignees?.map((a: any) => a._id || a) || [],
-        estimatedHours: task.estimatedHours || 0,
-        actualHours: task.actualHours || 0,
-        priority: task.priority || TaskPriority.MEDIUM,
-        status: task.status || TaskStatus.TODO,
-        dueDate: dueDate,
-        tags: task.tags || [],
-      });
-    }
-  }, [taskData]);
+// Update the useEffect to access the task directly from data
+// Initialize form with task data
+// Initialize form with task data
+useEffect(() => {
+  if (taskData?.data) {
+    const task = taskData.data as any; // Temporary type assertion
+    console.log('Task data:', task);
+    
+    // Format date to YYYY-MM-DD for input field
+    const dueDate = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '';
+    
+    // Safely get project ID (handle both object and string)
+    const projectId = task.project ? 
+      (typeof task.project === 'object' ? task.project._id : task.project) : '';
+    
+    // Safely get sprint ID (handle both object and string)
+    const sprintId = task.sprint ?
+      (typeof task.sprint === 'object' ? task.sprint._id : task.sprint) : '';
+    
+    // Get assignee IDs
+    const assigneeIds = task.assignees?.map((a: any) => 
+      typeof a === 'object' ? a._id : a
+    ) || [];
+    
+    setFormData({
+      title: task.title || '',
+      description: task.description || '',
+      project: projectId,
+      sprint: sprintId,
+      assignees: assigneeIds,
+      estimatedHours: task.estimatedHours || 0,
+      actualHours: task.actualHours || 0,
+      priority: task.priority || TaskPriority.MEDIUM,
+      status: task.status || TaskStatus.TODO,
+      dueDate: dueDate,
+      tags: task.tags || [],
+    });
+  }
+}, [taskData]);
 
   // Validate form
   const validateForm = () => {
@@ -214,7 +230,10 @@ export default function EditTaskPage() {
 
   // Check if user can edit this task
   const canEditTask = user?.role !== UserRole.MEMBER || 
-    (taskData?.data?.task?.assignees?.some((a: any) => a._id === user?._id));
+  (taskData?.data?.assignees?.some((a: any) => {
+    const assigneeId = typeof a === 'string' ? a : a._id;
+    return assigneeId === user?._id;
+  }));
 
   if (!canEditTask) {
     return (

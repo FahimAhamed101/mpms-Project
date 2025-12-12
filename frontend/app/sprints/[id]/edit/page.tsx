@@ -15,12 +15,25 @@ import {
   ArrowLeft,
   Save,
   Calendar,
-  Target,
   AlertCircle,
   Clock,
-  CheckCircle,
-  Trash2,
 } from 'lucide-react';
+
+// Define a type for the sprint data
+interface SprintData {
+  _id: string;
+  title: string;
+  project?: any; // Use 'any' to avoid type issues
+  startDate: string;
+  endDate: string;
+  goal?: string;
+  sprintNumber: number;
+  progress?: number;
+  stats?: {
+    totalTasks?: number;
+    completedTasks?: number;
+  };
+}
 
 export default function EditSprintPage() {
   const params = useParams();
@@ -46,11 +59,26 @@ export default function EditSprintPage() {
   // Initialize form when sprint data is loaded
   useEffect(() => {
     if (sprintData?.data) {
-      const sprint = sprintData.data;
+      const sprint = sprintData.data as SprintData;
       console.log('Sprint data loaded:', sprint);
+      
+      // FIX: Handle project field safely
+      let projectValue = '';
+      
+      // Check if project exists and handle different formats
+      if (sprint.project) {
+        if (typeof sprint.project === 'object' && sprint.project !== null) {
+          // It's an object - try to get _id or id
+          projectValue = (sprint.project as any)._id || (sprint.project as any).id || '';
+        } else if (typeof sprint.project === 'string') {
+          // It's already a string ID
+          projectValue = sprint.project;
+        }
+      }
+      
       setFormData({
         title: sprint.title || '',
-        project: sprint.project?._id || sprint.project || '',
+        project: projectValue,
         startDate: sprint.startDate ? new Date(sprint.startDate).toISOString().split('T')[0] : '',
         endDate: sprint.endDate ? new Date(sprint.endDate).toISOString().split('T')[0] : '',
         goal: sprint.goal || '',
@@ -107,25 +135,22 @@ export default function EditSprintPage() {
     }
     
     try {
-      // Prepare update data - RTK Query will handle the ID separately
+      // Prepare update data
       const updateData = {
         title: formData.title.trim(),
         project: formData.project,
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
         sprintNumber: formData.sprintNumber,
-        goal: formData.goal.trim() || '', // Include goal even if empty
+        goal: formData.goal.trim() || '',
       };
       
       console.log('Submitting update data:', updateData);
-      console.log('Sprint ID:', sprintId);
       
-      // Pass both id and data - check your RTK Query endpoint definition
       await updateSprint({ id: sprintId, ...updateData }).unwrap();
       router.push(`/sprints/${sprintId}`);
     } catch (error: any) {
       console.error('Failed to update sprint:', error);
-      console.error('Error details:', error?.data);
       if (error?.data?.errors) {
         const serverErrors: Record<string, string> = {};
         error.data.errors.forEach((err: any) => {
@@ -165,7 +190,7 @@ export default function EditSprintPage() {
   }
 
   const projects = projectsData?.data || [];
-  const sprint = sprintData?.data;
+  const sprint = sprintData?.data as SprintData | undefined;
 
   return (
     <ProtectedRoute>
@@ -199,12 +224,6 @@ export default function EditSprintPage() {
                 </button>
               </div>
             </div>
-          </div>
-
-          {/* Debug Info */}
-          <div className="mb-6 p-4 bg-blue-50 rounded-lg text-xs text-blue-700">
-            <p>Form Data: {JSON.stringify(formData)}</p>
-            <p>Sprint Number: {formData.sprintNumber}</p>
           </div>
 
           {errors.form && (

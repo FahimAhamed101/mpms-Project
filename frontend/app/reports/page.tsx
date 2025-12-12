@@ -97,9 +97,9 @@ export default function ReportsPage() {
     data: teamResponse,
     refetch: refetchTeam,
     isLoading: teamLoading
-  } = useGetTeamMembersQuery(undefined, {
-    skip: !user,
-  });
+  } =  useGetTeamMembersQuery({}, { // Change undefined to empty object
+  skip: !user,
+});
 
   const { 
     data: projectAnalyticsResponse, 

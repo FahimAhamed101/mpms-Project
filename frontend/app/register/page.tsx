@@ -58,11 +58,12 @@ export default function RegisterPage() {
     'Other',
   ];
 
-  // Role descriptions
-  const roleDescriptions = {
+  // Role descriptions - FIXED: Use Record type with UserRole as keys
+  const roleDescriptions: Record<UserRole, string> = {
     [UserRole.ADMIN]: 'Full system access, can manage all users and projects',
     [UserRole.MANAGER]: 'Can create and manage projects, assign tasks to team members',
     [UserRole.MEMBER]: 'Can view assigned tasks, update progress, and collaborate on projects',
+    [UserRole.CLIENT]: 'Can view project progress and provide feedback', // Add if CLIENT exists in your UserRole enum
   };
 
   // Handle form input changes
@@ -184,6 +185,9 @@ export default function RegisterPage() {
     }
   };
 
+  // Get filtered roles for display - FIXED: Filter out CLIENT role if it's not meant for registration
+  const availableRoles = Object.values(UserRole).filter(role => role !== UserRole.CLIENT);
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 px-4 py-12">
       <div className="max-w-4xl w-full">
@@ -262,7 +266,7 @@ export default function RegisterPage() {
             <div className="mt-8 pt-8 border-t border-gray-200">
               <h3 className="font-semibold text-gray-900 mb-4">Available Roles</h3>
               <div className="space-y-4">
-                {Object.values(UserRole).map((role) => (
+                {availableRoles.map((role) => (
                   <div key={role} className="bg-gray-50 rounded-lg p-4">
                     <div className="flex justify-between items-start">
                       <div>
@@ -458,7 +462,7 @@ export default function RegisterPage() {
                   onChange={handleChange}
                   className="block w-full px-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                 >
-                  {Object.values(UserRole).map((role) => (
+                  {availableRoles.map((role) => (
                     <option key={role} value={role} className="capitalize">
                       {role}
                     </option>

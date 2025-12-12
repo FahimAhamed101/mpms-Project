@@ -52,14 +52,13 @@ export default function TasksPage() {
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
-  // Fetch tasks with filters
-  const { data: tasksData, isLoading, refetch } = useGetTasksQuery({
-    search: searchTerm || undefined,
-    status: statusFilter !== 'all' ? statusFilter : undefined,
-    priority: priorityFilter !== 'all' ? priorityFilter : undefined,
-    project: projectFilter !== 'all' ? projectFilter : undefined,
-    assignee: assigneeFilter !== 'all' ? assigneeFilter : undefined,
-  });
+const { data: tasksData, isLoading, refetch } = useGetTasksQuery({
+  search: searchTerm || undefined,
+  status: statusFilter !== 'all' ? (statusFilter as TaskStatus) : undefined,
+  priority: priorityFilter !== 'all' ? (priorityFilter as TaskPriority) : undefined,
+  project: projectFilter !== 'all' ? projectFilter : undefined,
+  assignee: assigneeFilter !== 'all' ? assigneeFilter : undefined,
+});
 
   // Fetch projects for filter
   const { data: projectsData } = useGetProjectsQuery();

@@ -36,7 +36,7 @@ import {
   BarChart,
 } from 'lucide-react';
 import { format, isBefore, isAfter } from 'date-fns';
-import { UserRole } from '@/types';
+import { UserRole } from '@/app/types';
 
 export default function SprintsPage() {
   const router = useRouter();

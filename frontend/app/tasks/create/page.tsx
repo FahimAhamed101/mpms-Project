@@ -32,8 +32,8 @@ export default function CreateTaskPage() {
   const [createTask, { isLoading }] = useCreateTaskMutation();
   
   const { data: projectsData } = useGetProjectsQuery();
-  const { data: sprintsData } = useGetSprintsQuery();
-  const { data: teamData } = useGetTeamMembersQuery();
+  const { data: sprintsData } = useGetSprintsQuery({});
+  const { data: teamData } = useGetTeamMembersQuery({});
 
   const [formData, setFormData] = useState({
     title: '',
