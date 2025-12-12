@@ -18,7 +18,6 @@ export const createSprint = async (
 
     const { title, project, startDate, endDate, goal } = req.body;
 
-
     const projectDoc = await Project.findById(project);
     if (!projectDoc) {
       res.status(404).json({ success: false, message: 'Project not found' });
@@ -35,12 +34,17 @@ export const createSprint = async (
       return;
     }
 
+    // Calculate sprint number before creating
+    const lastSprint = await Sprint.findOne({ project }).sort({ sprintNumber: -1 });
+    const sprintNumber = lastSprint ? lastSprint.sprintNumber + 1 : 1;
+
     const sprint = await Sprint.create({
       title,
       project,
       startDate,
       endDate,
       goal,
+      sprintNumber, // Add this
     });
 
     res.status(201).json({
