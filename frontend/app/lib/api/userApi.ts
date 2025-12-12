@@ -39,7 +39,7 @@ interface UpdatePasswordData {
 export const userApi = createApi({
   reducerPath: 'userApi',
   baseQuery: fetchBaseQuery({
-    baseUrl: '/api',
+   baseUrl: process.env.NEXT_PUBLIC_API_URL ,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token;
       if (token) {

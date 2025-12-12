@@ -79,12 +79,7 @@ const DashboardLayout = ({ children, user }: DashboardLayoutProps) => {
       icon: BarChart3,
       roles: ['admin', 'manager'],
     },
-    {
-      name: 'Profile',
-      href: '/profile',
-      icon: User,
-      roles: ['admin', 'manager', 'member'],
-    },
+  
   ];
 
   const filteredNavigation = navigation.filter(item =>

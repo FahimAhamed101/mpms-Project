@@ -22,7 +22,7 @@ interface UpdateTaskData {
 export const taskApi = createApi({
   reducerPath: 'taskApi',
   baseQuery: fetchBaseQuery({
-  baseUrl: 'http://localhost:5000/api',
+   baseUrl: process.env.NEXT_PUBLIC_API_URL ,
     prepareHeaders: (headers, { getState }) => {
       const token = (getState() as RootState).auth.token;
       if (token) {
