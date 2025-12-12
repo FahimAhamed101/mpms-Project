@@ -52,14 +52,14 @@ export const sprintApi = createApi({
       invalidatesTags: ['Sprint'],
     }),
 
-    updateSprint: builder.mutation<{ success: boolean; data: Sprint }, { id: string; data: Partial<Sprint> }>({
-      query: ({ id, data }) => ({
-        url: `/sprints/${id}`,
-        method: 'PUT',
-        body: data,
-      }),
-      invalidatesTags: ['Sprint'],
-    }),
+ updateSprint: builder.mutation({
+  query: ({ id, ...data }) => ({
+    url: `/sprints/${id}`,
+    method: 'PUT',
+    body: data,
+  }),
+  invalidatesTags: ['Sprint'],
+}),
 
     deleteSprint: builder.mutation<{ success: boolean; message: string }, string>({
       query: (id) => ({

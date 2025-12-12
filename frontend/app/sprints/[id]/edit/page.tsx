@@ -38,6 +38,7 @@ export default function EditSprintPage() {
     startDate: '',
     endDate: '',
     goal: '',
+    sprintNumber: 0,
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -46,12 +47,14 @@ export default function EditSprintPage() {
   useEffect(() => {
     if (sprintData?.data) {
       const sprint = sprintData.data;
+      console.log('Sprint data loaded:', sprint);
       setFormData({
         title: sprint.title || '',
         project: sprint.project?._id || sprint.project || '',
         startDate: sprint.startDate ? new Date(sprint.startDate).toISOString().split('T')[0] : '',
         endDate: sprint.endDate ? new Date(sprint.endDate).toISOString().split('T')[0] : '',
         goal: sprint.goal || '',
+        sprintNumber: sprint.sprintNumber || 0,
       });
     }
   }, [sprintData]);
@@ -98,20 +101,31 @@ export default function EditSprintPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!validateForm()) return;
+    if (!validateForm()) {
+      console.log('Form validation failed:', errors);
+      return;
+    }
     
     try {
-      const sprintData = {
-        id: sprintId,
-        ...formData,
+      // Prepare update data - RTK Query will handle the ID separately
+      const updateData = {
+        title: formData.title.trim(),
+        project: formData.project,
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
+        sprintNumber: formData.sprintNumber,
+        goal: formData.goal.trim() || '', // Include goal even if empty
       };
       
-      await updateSprint(sprintData).unwrap();
+      console.log('Submitting update data:', updateData);
+      console.log('Sprint ID:', sprintId);
+      
+      // Pass both id and data - check your RTK Query endpoint definition
+      await updateSprint({ id: sprintId, ...updateData }).unwrap();
       router.push(`/sprints/${sprintId}`);
     } catch (error: any) {
       console.error('Failed to update sprint:', error);
+      console.error('Error details:', error?.data);
       if (error?.data?.errors) {
         const serverErrors: Record<string, string> = {};
         error.data.errors.forEach((err: any) => {
@@ -187,6 +201,12 @@ export default function EditSprintPage() {
             </div>
           </div>
 
+          {/* Debug Info */}
+          <div className="mb-6 p-4 bg-blue-50 rounded-lg text-xs text-blue-700">
+            <p>Form Data: {JSON.stringify(formData)}</p>
+            <p>Sprint Number: {formData.sprintNumber}</p>
+          </div>
+
           {errors.form && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center">
@@ -196,16 +216,18 @@ export default function EditSprintPage() {
             </div>
           )}
 
-          {Object.keys(errors).length > 0 && !errors.form && (
+          {Object.keys(errors).filter(k => k !== 'form').length > 0 && (
             <div className="mb-6 bg-red-50 border border-red-200 rounded-lg p-4">
               <div className="flex items-center mb-2">
                 <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
                 <h3 className="font-medium text-red-800">Please fix the following errors:</h3>
               </div>
               <ul className="list-disc list-inside text-sm text-red-700">
-                {Object.entries(errors).map(([field, message]) => (
-                  <li key={field}>{message}</li>
-                ))}
+                {Object.entries(errors)
+                  .filter(([field]) => field !== 'form')
+                  .map(([field, message]) => (
+                    <li key={field}>{message}</li>
+                  ))}
               </ul>
             </div>
           )}
@@ -232,6 +254,9 @@ export default function EditSprintPage() {
                         }`}
                         placeholder="e.g., Sprint 1: User Authentication"
                       />
+                      {errors.title && (
+                        <p className="mt-1 text-sm text-red-600">{errors.title}</p>
+                      )}
                     </div>
 
                     <div>
@@ -253,6 +278,9 @@ export default function EditSprintPage() {
                           </option>
                         ))}
                       </select>
+                      {errors.project && (
+                        <p className="mt-1 text-sm text-red-600">{errors.project}</p>
+                      )}
                     </div>
 
                     <div>
@@ -291,6 +319,9 @@ export default function EditSprintPage() {
                           }`}
                         />
                       </div>
+                      {errors.startDate && (
+                        <p className="mt-1 text-sm text-red-600">{errors.startDate}</p>
+                      )}
                     </div>
 
                     <div>
@@ -309,6 +340,9 @@ export default function EditSprintPage() {
                           }`}
                         />
                       </div>
+                      {errors.endDate && (
+                        <p className="mt-1 text-sm text-red-600">{errors.endDate}</p>
+                      )}
                     </div>
                   </div>
 
@@ -350,7 +384,7 @@ export default function EditSprintPage() {
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-gray-600">Sprint Number:</span>
                       <span className="text-sm font-medium text-gray-900">
-                        #{sprint?.sprintNumber}
+                        #{formData.sprintNumber}
                       </span>
                     </div>
                     

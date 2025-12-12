@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { useSelector } from 'react-redux';
-import { RootState } from '@/lib/store';
-import ProtectedRoute from '@/components/auth/ProtectedRoute';
-import DashboardLayout from '@/components/layout/DashboardLayout';
+import { RootState } from '@/app/lib/store';
+import ProtectedRoute from '@/app/components/auth/ProtectedRoute';
+import DashboardLayout from '@/app/components/layout/DashboardLayout';
 import { 
   useGetProjectByIdQuery,
   useUpdateProjectMutation 
-} from '@/lib/api/projectApi';
-import { useGetTeamMembersQuery } from '@/lib/api/teamApi';
+} from '@/app/lib/api/projectApi';
+import { useGetTeamMembersQuery } from '@/app/lib/api/teamApi';
 import {
   ArrowLeft,
   Save,
@@ -23,16 +23,27 @@ import {
   AlertCircle,
   Trash2,
 } from 'lucide-react';
-import { ProjectStatus, UserRole } from '@/types';
+import { ProjectStatus, UserRole } from '@/app/types';
+import { normalizeProjectStatus } from '@/app/lib/utils/statusUtils';
 
 export default function EditProjectPage() {
   const params = useParams();
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
   const projectId = params.id as string;
+  const [mounted, setMounted] = useState(false);
 
-  const { data: projectData, isLoading: projectLoading } = useGetProjectByIdQuery(projectId);
-  const { data: teamData } = useGetTeamMembersQuery();
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const { data: projectData, isLoading: projectLoading } = useGetProjectByIdQuery(projectId, {
+    skip: !projectId || !user,
+  });
+  
+  // Fix: Pass empty object as parameter
+  const { data: teamData } = useGetTeamMembersQuery({});
+  
   const [updateProject, { isLoading: isUpdating }] = useUpdateProjectMutation();
 
   const [formData, setFormData] = useState({
@@ -55,6 +66,23 @@ export default function EditProjectPage() {
   useEffect(() => {
     if (projectData?.data) {
       const project = projectData.data;
+      
+      // Handle manager - could be string ID or User object
+      let managerId = '';
+      if (project.manager) {
+        managerId = typeof project.manager === 'string' 
+          ? project.manager 
+          : project.manager._id || '';
+      }
+      
+      // Handle team - could be array of string IDs or User objects
+      let teamIds: string[] = [];
+      if (project.team && Array.isArray(project.team)) {
+        teamIds = project.team.map((member: any) => 
+          typeof member === 'string' ? member : member._id || ''
+        ).filter(Boolean);
+      }
+      
       setFormData({
         title: project.title || '',
         client: project.client || '',
@@ -62,10 +90,11 @@ export default function EditProjectPage() {
         startDate: project.startDate ? new Date(project.startDate).toISOString().split('T')[0] : '',
         endDate: project.endDate ? new Date(project.endDate).toISOString().split('T')[0] : '',
         budget: project.budget?.toString() || '',
-        status: project.status || ProjectStatus.PLANNED,
-        manager: project.manager?._id || project.manager || '',
-        team: project.team?.map((member: any) => member._id || member) || [],
+        status: normalizeProjectStatus(project.status),
+        manager: managerId,
+        team: teamIds,
       });
+      
       if (project.thumbnail) {
         setThumbnailPreview(project.thumbnail);
       }
@@ -149,6 +178,11 @@ export default function EditProjectPage() {
       }
     }
   };
+
+  // Don't render until mounted
+  if (!mounted) {
+    return null;
+  }
 
   if (projectLoading) {
     return (
@@ -346,11 +380,13 @@ export default function EditProjectPage() {
                         onChange={handleChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       >
-                        {Object.values(ProjectStatus).map((status) => (
-                          <option key={status} value={status} className="capitalize">
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                          </option>
-                        ))}
+                        <option value={ProjectStatus.PLANNING}>Planning</option>
+                        <option value={ProjectStatus.PLANNED}>Planned</option>
+                        <option value={ProjectStatus.ACTIVE}>Active</option>
+                        <option value={ProjectStatus.ON_HOLD}>On Hold</option>
+                        <option value={ProjectStatus.COMPLETED}>Completed</option>
+                        <option value={ProjectStatus.CANCELLED}>Cancelled</option>
+                        <option value={ProjectStatus.ARCHIVED}>Archived</option>
                       </select>
                     </div>
                   </div>
@@ -414,32 +450,38 @@ export default function EditProjectPage() {
                     </span>
                   </div>
                   <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {teamData?.data
-                      ?.filter((member: any) => member.isActive)
-                      .map((member: any) => (
-                        <label
-                          key={member._id}
-                          className="flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
-                        >
-                          <input
-                            type="checkbox"
-                            checked={formData.team.includes(member._id)}
-                            onChange={() => handleTeamChange(member._id)}
-                            className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500"
-                          />
-                          <div className="ml-3 flex items-center">
-                            <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
-                              <span className="text-sm font-medium text-indigo-600">
-                                {member.name?.charAt(0).toUpperCase()}
-                              </span>
+                    {teamData?.data && Array.isArray(teamData.data) && teamData.data.length > 0 ? (
+                      teamData.data
+                        .filter((member: any) => member.isActive)
+                        .map((member: any) => (
+                          <label
+                            key={member._id}
+                            className="flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formData.team.includes(member._id)}
+                              onChange={() => handleTeamChange(member._id)}
+                              className="h-4 w-4 text-indigo-600 rounded focus:ring-indigo-500"
+                            />
+                            <div className="ml-3 flex items-center">
+                              <div className="h-8 w-8 rounded-full bg-indigo-100 flex items-center justify-center">
+                                <span className="text-sm font-medium text-indigo-600">
+                                  {member.name?.charAt(0).toUpperCase()}
+                                </span>
+                              </div>
+                              <div className="ml-3">
+                                <p className="text-sm font-medium text-gray-900">{member.name}</p>
+                                <p className="text-xs text-gray-500 capitalize">{member.role}</p>
+                              </div>
                             </div>
-                            <div className="ml-3">
-                              <p className="text-sm font-medium text-gray-900">{member.name}</p>
-                              <p className="text-xs text-gray-500 capitalize">{member.role}</p>
-                            </div>
-                          </div>
-                        </label>
-                      ))}
+                          </label>
+                        ))
+                    ) : (
+                      <div className="text-center py-4 text-gray-500 text-sm">
+                        No team members available
+                      </div>
+                    )}
                   </div>
                 </div>
 

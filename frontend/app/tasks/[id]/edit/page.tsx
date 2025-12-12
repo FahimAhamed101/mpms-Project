@@ -11,6 +11,7 @@ import {
   useUpdateTaskMutation 
 } from '@/app/lib/api/taskApi';
 import { useGetProjectsQuery } from '@/app/lib/api/projectApi';
+import { useGetSprintsQuery } from '@/app/lib/api/sprintApi';
 import { useGetUsersQuery } from '@/app/lib/api/userApi';
 import {
   ArrowLeft,
@@ -36,6 +37,7 @@ export default function EditTaskPage() {
     title: '',
     description: '',
     project: '',
+    sprint: '',
     assignees: [] as string[],
     estimatedHours: 0,
     actualHours: 0,
@@ -53,20 +55,29 @@ export default function EditTaskPage() {
     skip: !taskId,
   });
   
-  // Fetch projects and users
+  // Fetch projects, sprints, and users
   const { data: projectsData } = useGetProjectsQuery();
+  const { data: sprintsData } = useGetSprintsQuery({});
   const { data: usersData } = useGetUsersQuery();
   
   const [updateTask] = useUpdateTaskMutation();
 
   const projects = projectsData?.data || [];
+  const sprints = sprintsData?.data || [];
   const users = usersData?.data || [];
+
+  // Filter sprints by selected project
+  const projectSprints = formData.project 
+    ? sprints.filter((s: any) => 
+        s.project === formData.project || s.project?._id === formData.project
+      )
+    : sprints;
 
   // Initialize form with task data
   useEffect(() => {
     if (taskData?.data?.task) {
       const task = taskData.data.task;
-      console.log('Task data:', task); // Debug log
+      console.log('Task data:', task);
       
       // Format date to YYYY-MM-DD for input field
       const dueDate = task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : '';
@@ -75,6 +86,7 @@ export default function EditTaskPage() {
         title: task.title || '',
         description: task.description || '',
         project: task.project?._id || task.project || '',
+        sprint: task.sprint?._id || task.sprint || '',
         assignees: task.assignees?.map((a: any) => a._id || a) || [],
         estimatedHours: task.estimatedHours || 0,
         actualHours: task.actualHours || 0,
@@ -102,6 +114,10 @@ export default function EditTaskPage() {
       newErrors.project = 'Project is required';
     }
     
+    if (!formData.sprint) {
+      newErrors.sprint = 'Sprint is required';
+    }
+    
     if (formData.estimatedHours <= 0) {
       newErrors.estimatedHours = 'Estimated hours must be greater than 0';
     }
@@ -119,25 +135,50 @@ export default function EditTaskPage() {
     e.preventDefault();
     
     if (!validateForm()) {
+      console.log('Validation errors:', errors);
       return;
     }
     
     setIsSubmitting(true);
     
     try {
-      console.log('Updating task with data:', { id: taskId, ...formData }); // Debug log
+      const updateData = {
+        title: formData.title.trim(),
+        description: formData.description.trim(),
+        project: formData.project,
+        sprint: formData.sprint,
+        assignees: formData.assignees,
+        estimatedHours: formData.estimatedHours,
+        actualHours: formData.actualHours,
+        priority: formData.priority,
+        status: formData.status,
+        dueDate: formData.dueDate,
+        tags: formData.tags,
+      };
+      
+      console.log('Updating task with data:', { id: taskId, ...updateData });
       
       await updateTask({
         id: taskId,
-        ...formData,
+        ...updateData,
       }).unwrap();
       
       router.push(`/tasks/${taskId}`);
     } catch (error: any) {
       console.error('Failed to update task:', error);
-      // Show error in a better way
-      const errorMessage = error?.data?.message || error?.error || 'Failed to update task';
-      alert(errorMessage);
+      console.error('Error data:', error?.data);
+      
+      // Handle validation errors from backend
+      if (error?.data?.errors && Array.isArray(error.data.errors)) {
+        const serverErrors: Record<string, string> = {};
+        error.data.errors.forEach((err: any) => {
+          serverErrors[err.path] = err.msg;
+        });
+        setErrors(serverErrors);
+      } else {
+        const errorMessage = error?.data?.message || error?.error || 'Failed to update task';
+        alert(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -309,7 +350,11 @@ export default function EditTaskPage() {
                     </label>
                     <select
                       value={formData.project}
-                      onChange={(e) => handleInputChange('project', e.target.value)}
+                      onChange={(e) => {
+                        handleInputChange('project', e.target.value);
+                        // Reset sprint when project changes
+                        handleInputChange('sprint', '');
+                      }}
                       className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
                         errors.project ? 'border-red-500' : 'border-gray-300'
                       }`}
@@ -326,8 +371,36 @@ export default function EditTaskPage() {
                     )}
                   </div>
 
-                  {/* Assignees */}
+                  {/* Sprint */}
                   <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Sprint *
+                    </label>
+                    <select
+                      value={formData.sprint}
+                      onChange={(e) => handleInputChange('sprint', e.target.value)}
+                      disabled={!formData.project}
+                      className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 ${
+                        errors.sprint ? 'border-red-500' : 'border-gray-300'
+                      } ${!formData.project ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                    >
+                      <option value="">Select a sprint</option>
+                      {projectSprints.map((sprint: any) => (
+                        <option key={sprint._id} value={sprint._id}>
+                          Sprint #{sprint.sprintNumber}: {sprint.title}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.sprint && (
+                      <p className="mt-1 text-sm text-red-600">{errors.sprint}</p>
+                    )}
+                    {!formData.project && (
+                      <p className="mt-1 text-sm text-gray-500">Select a project first</p>
+                    )}
+                  </div>
+
+                  {/* Assignees */}
+                  <div className="col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Assignees
                     </label>

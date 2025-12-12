@@ -53,7 +53,7 @@ export default function ProjectsPage() {
     client: clientFilter !== 'all' ? clientFilter : undefined,
   });
 
-  const { data: teamData } = useGetTeamMembersQuery();
+  const { data: teamData } = useGetTeamMembersQuery({})
   const [deleteProject] = useDeleteProjectMutation();
 
   const projects = projectsData?.data || [];

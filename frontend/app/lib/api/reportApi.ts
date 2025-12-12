@@ -1,107 +1,104 @@
-'use client';
+// app/lib/api/reportApi.ts
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
+import { RootState } from '../store';
 
-import { api } from './index';
-
-export const reportApi = api.injectEndpoints({
+export const reportApi = createApi({
+  reducerPath: 'reportApi',
+  baseQuery: fetchBaseQuery({
+    baseUrl: 'http://localhost:5000/api/reports',
+    prepareHeaders: (headers, { getState }) => {
+      const token = (getState() as RootState).auth.token;
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
+      }
+      return headers;
+    },
+  }),
+  tagTypes: ['Report', 'Dashboard', 'ProjectAnalytics', 'TeamPerformance'],
   endpoints: (builder) => ({
-    getDashboardStats: builder.query({
-      query: () => '/reports/dashboard',
-      providesTags: ['Report'],
-    }),
- 
-
-    getSprintReports: builder.query({
-      query: (sprintId: string) => `/reports/sprint/${sprintId}`,
-      providesTags: (result, error, sprintId) => [{ type: 'Report', id: sprintId }],
-    }),
-
-     getProjectProgress: builder.query({
-      query: (projectId: string) => `/reports/project/${projectId}`,
-      providesTags: (result, error, projectId) => [{ type: 'Report', id: projectId }],
-    }),
-    
-    // User workload report
-    getUserWorkload: builder.query({
-      query: (userId: string) => `/reports/user/${userId}`,
-      providesTags: (result, error, userId) => [{ type: 'Report', id: userId }],
-    }),
-    
-    // Team performance report
-    getTeamPerformance: builder.query({
-      query: ({ startDate, endDate }: { startDate?: string; endDate?: string } = {}) => {
-        const params = new URLSearchParams();
-        if (startDate) params.append('startDate', startDate);
-        if (endDate) params.append('endDate', endDate);
-        return `/reports/team/performance?${params.toString()}`;
-      },
-      providesTags: ['Report'],
-    }),
-    
-    // Project analytics with filters
-    getProjectAnalytics: builder.query({
-      query: ({ projectId, startDate, endDate }: {
-        projectId: string;
-        startDate?: string;
-        endDate?: string;
-      }) => {
-        const params = new URLSearchParams();
-        if (startDate) params.append('startDate', startDate);
-        if (endDate) params.append('endDate', endDate);
-        return `/reports/project/${projectId}/analytics?${params.toString()}`;
-      },
-      providesTags: ['Report'],
-    }),
-    
-    // Time tracking report
-    getTimeTrackingReport: builder.query({
-      query: ({ startDate, endDate, userId }: {
-        startDate: string;
-        endDate: string;
-        userId?: string;
-      }) => {
-        const params = new URLSearchParams();
-        params.append('startDate', startDate);
-        params.append('endDate', endDate);
-        if (userId) params.append('userId', userId);
-        return `/reports/time-tracking?${params.toString()}`;
-      },
-      providesTags: ['Report'],
-    }),
-    
-    // Budget report
-    getBudgetReport: builder.query({
-      query: ({ projectId }: { projectId?: string } = {}) => {
-        const params = new URLSearchParams();
-        if (projectId) params.append('projectId', projectId);
-        return `/reports/budget?${params.toString()}`;
-      },
-      providesTags: ['Report'],
-    }),
-    
-    // Export report
-    exportReport: builder.mutation({
-      query: ({ format, type, filters }: {
-        format: 'pdf' | 'excel' | 'csv';
-        type: string;
-        filters: Record<string, any>;
-      }) => ({
-        url: `/reports/export`,
-        method: 'POST',
-        body: { format, type, filters },
+    getDashboardStats: builder.query<any, void>({
+      query: () => ({
+        url: '/dashboard',
+        method: 'GET',
       }),
+      providesTags: ['Dashboard'],
+      transformResponse: (response: any) => {
+        return {
+          success: response?.success || false,
+          data: response?.data || {
+            overview: {
+              totalProjects: 0,
+              activeProjects: 0,
+              totalTasks: 0,
+              totalUsers: 0,
+              totalSprints: 0,
+            },
+            taskStatus: {
+              todo: 0,
+              inProgress: 0,
+              review: 0,
+              done: 0,
+              overdue: 0,
+            },
+            recentActivities: [],
+          },
+          count: response?.count || 0,
+        };
+      },
+    }),
+    
+    getProjectAnalytics: builder.query<any, string | undefined>({
+      query: (projectId) => ({
+        url: projectId && projectId !== 'all' ? `/project/${projectId}` : '/projects/analytics',
+        method: 'GET',
+      }),
+      providesTags: (result, error, projectId) => [
+        { type: 'ProjectAnalytics', id: projectId || 'all' }
+      ],
+      transformResponse: (response: any) => {
+        return {
+          success: response?.success || false,
+          data: response?.data || (Array.isArray(response?.data) ? [] : {}),
+          count: response?.count || 0,
+        };
+      },
+    }),
+    
+    getUserWorkload: builder.query<any, string | undefined>({
+      query: (userId) => ({
+        url: userId && userId !== 'all' ? `/user/${userId}/workload` : '/team/workload',
+        method: 'GET',
+      }),
+      transformResponse: (response: any) => {
+        return {
+          success: response?.success || false,
+          data: response?.data || (Array.isArray(response?.data) ? [] : {}),
+          count: response?.count || 0,
+        };
+      },
+    }),
+    
+    getTeamPerformance: builder.query<any, { startDate: string; endDate: string }>({
+      query: ({ startDate, endDate }) => ({
+        url: '/team-performance',
+        method: 'GET',
+        params: { startDate, endDate },
+      }),
+      providesTags: ['TeamPerformance'],
+      transformResponse: (response: any) => {
+        return {
+          success: response?.success || false,
+          data: response?.data || [],
+          count: response?.count || 0,
+        };
+      },
     }),
   }),
 });
 
-
-
 export const {
   useGetDashboardStatsQuery,
-  useGetProjectProgressQuery,
+  useGetProjectAnalyticsQuery,
   useGetUserWorkloadQuery,
   useGetTeamPerformanceQuery,
-  useGetProjectAnalyticsQuery,
-  useGetTimeTrackingReportQuery,
-  useGetBudgetReportQuery,
-  useExportReportMutation,
 } = reportApi;

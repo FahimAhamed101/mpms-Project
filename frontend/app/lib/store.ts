@@ -6,14 +6,16 @@ import { teamApi } from './api/teamApi';
 import { projectApi } from './api/projectApi';
 import { taskApi } from './api/taskApi';
 import { sprintApi } from './api/sprintApi';
+import { userApi } from './api/userApi';
+import { reportApi } from './api/reportApi';
 export const store = configureStore({
   reducer: {
-    [api.reducerPath]: api.reducer, [projectApi.reducerPath]: projectApi.reducer,[taskApi.reducerPath]: taskApi.reducer,[sprintApi.reducerPath]: sprintApi.reducer,
+    [api.reducerPath]: api.reducer, [projectApi.reducerPath]: projectApi.reducer,[reportApi.reducerPath]: reportApi.reducer,[userApi.reducerPath]: userApi.reducer,[taskApi.reducerPath]: taskApi.reducer,[sprintApi.reducerPath]: sprintApi.reducer,
     [teamApi.reducerPath]: teamApi.reducer, 
     auth: authReducer,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware().concat(api.middleware).concat(projectApi.middleware).concat(teamApi.middleware).concat(taskApi.middleware).concat(sprintApi.middleware),
+    getDefaultMiddleware().concat(api.middleware).concat(reportApi.middleware).concat(projectApi.middleware).concat(teamApi.middleware).concat(taskApi.middleware).concat(sprintApi.middleware).concat(userApi.middleware),
   devTools: process.env.NODE_ENV !== 'production',
 });
 

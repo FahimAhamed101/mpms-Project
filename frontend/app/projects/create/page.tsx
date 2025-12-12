@@ -24,7 +24,9 @@ export default function CreateProjectPage() {
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
   const [createProject, { isLoading }] = useCreateProjectMutation();
-  const { data: teamResponse } = useGetTeamMembersQuery();
+  
+  // Fix: Pass empty object as parameter
+  const { data: teamResponse } = useGetTeamMembersQuery({});
   
   // Extract team members data from the response
   const teamMembers = teamResponse?.data || [];
@@ -138,7 +140,7 @@ export default function CreateProjectPage() {
         startDate: new Date(formData.startDate).toISOString(),
         endDate: new Date(formData.endDate).toISOString(),
         budget: parseFloat(formData.budget),
-        status: formData.status,
+        status: formData.status as string, // Cast to string for API
         manager: managerIdToUse,
         // Include all selected team members plus the manager
         team: [...formData.team, managerIdToUse],
@@ -190,12 +192,6 @@ export default function CreateProjectPage() {
             <p className="text-gray-600 mt-1">
               Fill in the details to create a new project
             </p>
-            {/* Debug info */}
-            <div className="mt-2 p-3 bg-blue-50 rounded-lg text-xs text-blue-700">
-              <p>Logged in as: {user?.name} (ID: {user?._id})</p>
-              <p>Manager field: {formData.manager || 'Not set yet'}</p>
-              <p>Team members selected: {formData.team.length}</p>
-            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="max-w-4xl">
@@ -368,11 +364,13 @@ export default function CreateProjectPage() {
                         onChange={handleChange}
                         className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                       >
-                        {Object.values(ProjectStatus).map((status) => (
-                          <option key={status} value={status} className="capitalize">
-                            {status.charAt(0).toUpperCase() + status.slice(1)}
-                          </option>
-                        ))}
+                        <option value={ProjectStatus.PLANNING}>Planning</option>
+                        <option value={ProjectStatus.PLANNED}>Planned</option>
+                        <option value={ProjectStatus.ACTIVE}>Active</option>
+                        <option value={ProjectStatus.ON_HOLD}>On Hold</option>
+                        <option value={ProjectStatus.COMPLETED}>Completed</option>
+                        <option value={ProjectStatus.CANCELLED}>Cancelled</option>
+                        <option value={ProjectStatus.ARCHIVED}>Archived</option>
                       </select>
                     </div>
                   </div>

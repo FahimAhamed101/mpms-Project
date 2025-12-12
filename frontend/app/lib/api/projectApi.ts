@@ -33,20 +33,32 @@ export interface Project {
   };
 }
 
+
 export interface CreateProjectDto {
   title: string;
-  description: string;
   client: string;
-  status: 'planning' | 'active' | 'on-hold' | 'completed' | 'cancelled';
+  description: string;
   startDate: string;
   endDate: string;
   budget: number;
+  status?: string; // Make it optional and accept any string
+  manager: string;
+  team?: string[];
   thumbnail?: string;
-  manager?: string; // Optional - defaults to current user
 }
 
-export interface UpdateProjectDto extends Partial<CreateProjectDto> {
+export interface UpdateProjectDto {
   id: string;
+  title?: string;
+  client?: string;
+  description?: string;
+  startDate?: string;
+  endDate?: string;
+  budget?: number;
+  status?: string; // Make it optional and accept any string
+  manager?: string;
+  team?: string[];
+  thumbnail?: string;
 }
 
 export interface AddTeamMemberDto {
