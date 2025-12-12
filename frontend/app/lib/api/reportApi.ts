@@ -8,19 +8,36 @@ export const reportApi = api.injectEndpoints({
       query: () => '/reports/dashboard',
       providesTags: ['Report'],
     }),
-    getProjectProgress: builder.query({
-      query: (projectId: string) => `/reports/project/${projectId}`,
-      providesTags: (result, error, projectId) => [{ type: 'Report', id: projectId }],
-    }),
-    getUserWorkload: builder.query({
-      query: (userId: string) => `/reports/user/${userId}`,
-      providesTags: (result, error, userId) => [{ type: 'Report', id: userId }],
-    }),
+ 
+
     getSprintReports: builder.query({
       query: (sprintId: string) => `/reports/sprint/${sprintId}`,
       providesTags: (result, error, sprintId) => [{ type: 'Report', id: sprintId }],
     }),
-    // Advanced reports with filters
+
+     getProjectProgress: builder.query({
+      query: (projectId: string) => `/reports/project/${projectId}`,
+      providesTags: (result, error, projectId) => [{ type: 'Report', id: projectId }],
+    }),
+    
+    // User workload report
+    getUserWorkload: builder.query({
+      query: (userId: string) => `/reports/user/${userId}`,
+      providesTags: (result, error, userId) => [{ type: 'Report', id: userId }],
+    }),
+    
+    // Team performance report
+    getTeamPerformance: builder.query({
+      query: ({ startDate, endDate }: { startDate?: string; endDate?: string } = {}) => {
+        const params = new URLSearchParams();
+        if (startDate) params.append('startDate', startDate);
+        if (endDate) params.append('endDate', endDate);
+        return `/reports/team/performance?${params.toString()}`;
+      },
+      providesTags: ['Report'],
+    }),
+    
+    // Project analytics with filters
     getProjectAnalytics: builder.query({
       query: ({ projectId, startDate, endDate }: {
         projectId: string;
@@ -34,23 +51,57 @@ export const reportApi = api.injectEndpoints({
       },
       providesTags: ['Report'],
     }),
-    getTeamPerformance: builder.query({
-      query: ({ startDate, endDate }: { startDate?: string; endDate?: string } = {}) => {
+    
+    // Time tracking report
+    getTimeTrackingReport: builder.query({
+      query: ({ startDate, endDate, userId }: {
+        startDate: string;
+        endDate: string;
+        userId?: string;
+      }) => {
         const params = new URLSearchParams();
-        if (startDate) params.append('startDate', startDate);
-        if (endDate) params.append('endDate', endDate);
-        return `/reports/team/performance?${params.toString()}`;
+        params.append('startDate', startDate);
+        params.append('endDate', endDate);
+        if (userId) params.append('userId', userId);
+        return `/reports/time-tracking?${params.toString()}`;
       },
       providesTags: ['Report'],
     }),
+    
+    // Budget report
+    getBudgetReport: builder.query({
+      query: ({ projectId }: { projectId?: string } = {}) => {
+        const params = new URLSearchParams();
+        if (projectId) params.append('projectId', projectId);
+        return `/reports/budget?${params.toString()}`;
+      },
+      providesTags: ['Report'],
+    }),
+    
+    // Export report
+    exportReport: builder.mutation({
+      query: ({ format, type, filters }: {
+        format: 'pdf' | 'excel' | 'csv';
+        type: string;
+        filters: Record<string, any>;
+      }) => ({
+        url: `/reports/export`,
+        method: 'POST',
+        body: { format, type, filters },
+      }),
+    }),
   }),
 });
+
+
 
 export const {
   useGetDashboardStatsQuery,
   useGetProjectProgressQuery,
   useGetUserWorkloadQuery,
-  useGetSprintReportsQuery,
-  useGetProjectAnalyticsQuery,
   useGetTeamPerformanceQuery,
+  useGetProjectAnalyticsQuery,
+  useGetTimeTrackingReportQuery,
+  useGetBudgetReportQuery,
+  useExportReportMutation,
 } = reportApi;
